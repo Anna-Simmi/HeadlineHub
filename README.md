@@ -1,7 +1,7 @@
 
 
 # 📰 HeadlineHub
-  ![Uploading Screenshot 2025-08-19 160651.png…]()
+  ![Screenshot 2025-08-19 160651.png…]()
 
 
 <p align="center">
