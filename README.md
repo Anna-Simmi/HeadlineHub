@@ -1,10 +1,8 @@
 
 
 # 📰 HeadlineHub
+  ![Uploading Screenshot 2025-08-19 160651.png…]()
 
-<p align="center">
-  <img src="screenshot.png" alt="HeadlineHub Screenshot" width="800"/>
-</p>  
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.13-blue?style=for-the-badge&logo=python&logoColor=white" />
