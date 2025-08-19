@@ -1,4 +1,5 @@
 # import libraries
+import os
 from flask import Flask, render_template, request
 from newsapi import NewsApiClient
 
@@ -6,7 +7,7 @@ from newsapi import NewsApiClient
 app = Flask(__name__)
 
 # Init news api 
-newsapi = NewsApiClient(api_key='b314a7fbc26f4be5a1ef609e1c56c046')
+newsapi = NewsApiClient(api_key=os.environ.get('NEWSAPI_KEY'))
 
 # helper function
 def get_sources_and_domains():
