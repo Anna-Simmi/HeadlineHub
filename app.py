@@ -1,63 +1,64 @@
-import os
-import traceback
-import requests
+# import libraries
 from flask import Flask, render_template, request
+from newsapi import NewsApiClient
 
 # init flask app
 app = Flask(__name__)
 
-# API key
-API_KEY = os.environ.get("NEWSAPI_KEY")
-print("DEBUG: Loaded NEWSAPI_KEY =", API_KEY)
+# Init news api 
+newsapi = NewsApiClient(api_key='b314a7fbc26f4be5a1ef609e1c56c046')
 
-BASE_URL = "https://newsapi.org/v2"
+# helper function
+def get_sources_and_domains():
+    all_sources = newsapi.get_sources()['sources']
+    sources = []
+    domains = []
+    for e in all_sources:
+        id = e['id']
+        domain = e['url'].replace("http://", "")
+        domain = domain.replace("https://", "")
+        domain = domain.replace("www.", "")
+        slash = domain.find('/')
+        if slash != -1:
+            domain = domain[:slash]
+        sources.append(id)
+        domains.append(domain)
+    sources = ", ".join(sources)
+    domains = ", ".join(domains)
+    return sources, domains
 
-def fetch_news(endpoint, params):
-    """Helper function to fetch news and log raw response"""
-    try:
-        params["apiKey"] = API_KEY
-        url = f"{BASE_URL}/{endpoint}"
-        resp = requests.get(url, params=params, timeout=10)
-        print(f"DEBUG Request URL: {resp.url}")
-        print(f"DEBUG Status Code: {resp.status_code}")
-        print(f"DEBUG Raw Response (first 500 chars): {resp.text[:500]}")
-        resp.raise_for_status()  # raise HTTP errors
-        return resp.json()
-    except Exception as e:
-        print("ERROR in fetch_news:", e)
-        traceback.print_exc()
-        return {"status": "error", "message": str(e)}
-
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=['GET', 'POST'])
 def home():
     if request.method == "POST":
         keyword = request.form["keyword"]
 
-        related_news = fetch_news("everything", {
-            "q": keyword,
-            "language": "en",
-            "sortBy": "relevancy",
-            "pageSize": 50
-        })
+        try:
+            # Search news only by keyword (no sources/domains)
+            related_news = newsapi.get_everything(
+                q=keyword,
+                language='en',
+                sort_by='relevancy',
+                page_size=50   # limit to avoid queryTooLong
+            )
 
-        if related_news.get("status") == "ok":
-            all_articles = related_news.get("articles", [])
+            all_articles = related_news.get('articles', [])
+
             return render_template("home.html", all_articles=all_articles, keyword=keyword)
-        else:
-            return render_template("home.html", all_articles=[], keyword=keyword, error=related_news.get("message"))
+
+        except Exception as e:
+            # If API fails, show error on page instead of crashing
+            return render_template("home.html", all_articles=[], keyword=keyword, error=str(e))
 
     else:
-        top_headlines = fetch_news("top-headlines", {
-            "country": "in",
-            "language": "en",
-            "pageSize": 50
-        })
+        try:
+            # Default: show top headlines
+            top_headlines = newsapi.get_top_headlines(country="in", language="en", page_size=50)
+            all_headlines = top_headlines.get('articles', [])
 
-        if top_headlines.get("status") == "ok":
-            all_headlines = top_headlines.get("articles", [])
             return render_template("home.html", all_headlines=all_headlines)
-        else:
-            return render_template("home.html", all_headlines=[], error=top_headlines.get("message"))
 
+        except Exception as e:
+            return render_template("home.html", all_headlines=[], error=str(e))
+        
 if __name__ == "__main__":
     app.run(debug=True)
