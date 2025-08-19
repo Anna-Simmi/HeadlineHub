@@ -1,78 +1,63 @@
-# import libraries
 import os
-from flask import Flask, render_template, request
-from newsapi import NewsApiClient
 import traceback
+import requests
+from flask import Flask, render_template, request
 
 # init flask app
 app = Flask(__name__)
 
-# Init news api 
-API_KEY = os.environ.get('NEWSAPI_KEY')
-print("DEBUG: Loaded NEWSAPI_KEY =", API_KEY)   # Debug log
-newsapi = NewsApiClient(api_key=API_KEY)
+# API key
+API_KEY = os.environ.get("NEWSAPI_KEY")
+print("DEBUG: Loaded NEWSAPI_KEY =", API_KEY)
 
-# helper function
-def get_sources_and_domains():
+BASE_URL = "https://newsapi.org/v2"
+
+def fetch_news(endpoint, params):
+    """Helper function to fetch news and log raw response"""
     try:
-        all_sources = newsapi.get_sources()
-        print("DEBUG get_sources response:", all_sources)  # Debug
-        all_sources = all_sources.get('sources', [])
-        sources = []
-        domains = []
-        for e in all_sources:
-            id = e['id']
-            domain = e['url'].replace("http://", "").replace("https://", "").replace("www.", "")
-            slash = domain.find('/')
-            if slash != -1:
-                domain = domain[:slash]
-            sources.append(id)
-            domains.append(domain)
-        sources = ", ".join(sources)
-        domains = ", ".join(domains)
-        return sources, domains
+        params["apiKey"] = API_KEY
+        url = f"{BASE_URL}/{endpoint}"
+        resp = requests.get(url, params=params, timeout=10)
+        print(f"DEBUG Request URL: {resp.url}")
+        print(f"DEBUG Status Code: {resp.status_code}")
+        print(f"DEBUG Raw Response (first 500 chars): {resp.text[:500]}")
+        resp.raise_for_status()  # raise HTTP errors
+        return resp.json()
     except Exception as e:
-        print("ERROR in get_sources_and_domains:", e)
+        print("ERROR in fetch_news:", e)
         traceback.print_exc()
-        return "", ""
+        return {"status": "error", "message": str(e)}
 
-@app.route("/", methods=['GET', 'POST'])
+@app.route("/", methods=["GET", "POST"])
 def home():
     if request.method == "POST":
         keyword = request.form["keyword"]
 
-        try:
-            # Search news only by keyword
-            related_news = newsapi.get_everything(
-                q=keyword,
-                language='en',
-                sort_by='relevancy',
-                page_size=50
-            )
+        related_news = fetch_news("everything", {
+            "q": keyword,
+            "language": "en",
+            "sortBy": "relevancy",
+            "pageSize": 50
+        })
 
-            print("DEBUG get_everything response:", related_news)  # Debug
-            all_articles = related_news.get('articles', [])
-
+        if related_news.get("status") == "ok":
+            all_articles = related_news.get("articles", [])
             return render_template("home.html", all_articles=all_articles, keyword=keyword)
-
-        except Exception as e:
-            print("ERROR in POST /:", e)
-            traceback.print_exc()
-            return render_template("home.html", all_articles=[], keyword=keyword, error=str(e))
+        else:
+            return render_template("home.html", all_articles=[], keyword=keyword, error=related_news.get("message"))
 
     else:
-        try:
-            # Default: show top headlines
-            top_headlines = newsapi.get_top_headlines(country="in", language="en", page_size=50)
-            print("DEBUG get_top_headlines response:", top_headlines)  # Debug
-            all_headlines = top_headlines.get('articles', [])
+        top_headlines = fetch_news("top-headlines", {
+            "country": "in",
+            "language": "en",
+            "pageSize": 50
+        })
 
+        if top_headlines.get("status") == "ok":
+            all_headlines = top_headlines.get("articles", [])
             return render_template("home.html", all_headlines=all_headlines)
+        else:
+            return render_template("home.html", all_headlines=[], error=top_headlines.get("message"))
 
-        except Exception as e:
-            print("ERROR in GET /:", e)
-            traceback.print_exc()
-            return render_template("home.html", all_headlines=[], error=str(e))
-        
 if __name__ == "__main__":
     app.run(debug=True)
