@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Flask News App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+  <!-- Navbar -->
+  <header class="bg-blue-800 text-white shadow-lg">
+    <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <h1 class="text-2xl font-bold">📰 Flask News App</h1>
+      <form method="POST" class="flex space-x-2">
+        <input type="text" name="keyword" placeholder="Search news..." required
+          class="px-3 py-2 rounded-lg text-black border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <button type="submit"
+          class="px-4 py-2 bg-yellow-500 text-black font-semibold rounded-lg shadow hover:bg-yellow-400">
+          Search
+        </button>
+      </form>
+    </div>
+  </header>
+
+  <!-- Error message -->
+  {% if error %}
+  <div class="bg-red-600 text-white p-4 text-center">
+    <strong>Error:</strong> {{ error }}
+  </div>
+  {% endif %}
+
+  <!-- Content -->
+  <main class="container mx-auto px-6 py-6 flex-1">
+    {% if keyword %}
+      <h2 class="text-2xl font-bold text-gray-800 mb-4">Search Results for "{{ keyword }}"</h2>
+      {% if all_articles %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {% for article in all_articles %}
+          <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition duration-300">
+            {% if article.urlToImage %}
+            <img src="{{ article.urlToImage }}" alt="news image" class="w-full h-48 object-cover">
+            {% endif %}
+            <div class="p-4">
+              <h3 class="text-lg font-semibold text-gray-900">{{ article.title }}</h3>
+              <p class="text-gray-600 text-sm mt-2">{{ article.description }}</p>
+              <a href="{{ article.url }}" target="_blank"
+                class="inline-block mt-3 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Read More →
+              </a>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-gray-700">No articles found for this keyword.</p>
+      {% endif %}
+    {% else %}
+      <h2 class="text-2xl font-bold text-gray-800 mb-4">Top Headlines</h2>
+      {% if all_headlines %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {% for article in all_headlines %}
+          <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition duration-300">
+            {% if article.urlToImage %}
+            <img src="{{ article.urlToImage }}" alt="news image" class="w-full h-48 object-cover">
+            {% endif %}
+            <div class="p-4">
+              <h3 class="text-lg font-semibold text-gray-900">{{ article.title }}</h3>
+              <p class="text-gray-600 text-sm mt-2">{{ article.description }}</p>
+              <a href="{{ article.url }}" target="_blank"
+                class="inline-block mt-3 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Read More →
+              </a>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-gray-700">No headlines available at the moment.</p>
+      {% endif %}
+    {% endif %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-gray-300 text-center py-4">
+    <p>&copy; {{ 2025 }} Flask News App | Built with Flask + Tailwind CSS</p>
+  </footer>
+
+</body>
+</html>
